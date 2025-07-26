@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ইংরেজী অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "Hearing the noise, the boy woke up. Here the word 'hearing' is a/an-",
+          options: {
+            a: "Noun",
+            b: "Participle",
+            c: "Verb",
+            d: "Adverb",
+          },
+          correct: "b",
+          explanation:
+            "'Hearing' functions as a present participle, modifying 'the boy' and indicating the action that occurred before he woke up. It acts as an adjective describing the boy's state or action in relation to the noise.",
+        },
+        {
+          id: 2,
+          question: "Walking is a good exercise. Here 'Walking' is-",
+          options: {
+            a: "Verb",
+            b: "Noun",
+            c: "Gerund",
+            d: "Adverb",
+          },
+          correct: "c",
+          explanation:
+            "When a verb ending in '-ing' functions as a noun (acting as the subject or object of a sentence), it is called a gerund. Here, 'Walking' is the subject of the sentence.",
+        },
+        {
+          id: 3,
+          question: "He gave up _ football when he got married.",
+          options: {
+            a: "of playing",
+            b: "to play",
+            c: "playing",
+            d: "play",
+          },
+          correct: "c",
+          explanation:
+            "The phrasal verb 'give up' (meaning to stop doing something) is followed by a gerund (verb-ing form).",
+        },
+        {
+          id: 4,
+          question:
+            "Which of the following is active with verbal noun with preposition & object?",
+          options: {
+            a: "I saw him go to the garden.",
+            b: "Amina & Joy made us laugh.",
+            c: "I am to make a telephone call.",
+            d: "We want to see the launching of the ship.",
+          },
+          correct: "d",
+          explanation:
+            "Let's break down option (d): 'launching' is a verbal noun (derived from a verb but functioning as a noun), 'of' is a preposition, and 'the ship' is the object of the preposition. The 'launching' itself is an active event performed on the ship.",
+        },
+        {
+          id: 5,
+          question:
+            "Education is the most pressing need of the time. Here the word 'pressing' is:",
+          options: {
+            a: "pronoun",
+            b: "adverb",
+            c: "gerund",
+            d: "verbal adjective",
+          },
+          correct: "d",
+          explanation:
+            "'Pressing' is a present participle used as an adjective to describe 'need'. It means urgent or critical. A verbal adjective is a participle functioning as an adjective.",
+        },
+        {
+          id: 6,
+          question: "'He is fond of playing cricket'. Here 'playing' is a-",
+          options: {
+            a: "Noun clause",
+            b: "Gerund",
+            c: "Verb phrase",
+            d: "Irregular verb",
+          },
+          correct: "b",
+          explanation:
+            "After the preposition 'of', the verb 'play' takes its '-ing' form and functions as a noun, which is a gerund.",
+        },
+        {
+          id: 7,
+          question: "She likes _ adventure books.",
+          options: {
+            a: "reads",
+            b: "reading",
+            c: "to reading",
+            d: "read",
+          },
+          correct: "b",
+          explanation:
+            "The verb 'like' can be followed by a gerund (verb-ing form) to express a general preference.",
+        },
+        {
+          id: 8,
+          question:
+            "I like travelling to visit different places of the world. In this sentence the verbal noun is-",
+          options: {
+            a: "travelling",
+            b: "visit",
+            c: "world",
+            d: "places",
+          },
+          correct: "a",
+          explanation:
+            "'Travelling' is a verb ending in '-ing' that functions as the object of the verb 'like'. When a verb ending in '-ing' functions as a noun, it is a gerund, which is a type of verbal noun.",
+        },
+        {
+          id: 9,
+          question: "_ is considered a serious crime.",
+          options: {
+            a: "Shoplift",
+            b: "To shoplifting",
+            c: "Shoplifter",
+            d: "Shoplifting",
+          },
+          correct: "d",
+          explanation:
+            "The subject of the sentence, referring to the act, must be a gerund ('Shoplifting'). 'Shoplift' is a verb, 'Shoplifter' is a noun for a person.",
+        },
+        {
+          id: 10,
+          question: "She went back to work (to close) the door.",
+          options: {
+            a: "closed",
+            b: "was closing",
+            c: "closing",
+            d: "close",
+          },
+          correct: "c",
+          explanation:
+            "This sentence likely intends to use a participle clause to describe an accompanying action. 'Closing the door' functions as a present participle clause, indicating what she was doing while going back to work or immediately upon arrival. While 'to close' (infinitive of purpose) is also possible in a different context, the parenthetical hint suggests a form for the blank. If it were 'to close' for purpose, the 'to' would be outside the blank. Here, 'closing' suggests an ongoing action or means.",
+        },
+        {
+          id: 11,
+          question:
+            "The word that readily falls into place in the blank: 'In spite of everything' life is worth _",
+          options: {
+            a: "eating",
+            b: "singing",
+            c: "dancing",
+            d: "living",
+          },
+          correct: "d",
+          explanation:
+            "The idiom is 'worth doing something', meaning it is good or important enough to do. 'Life is worth living' is a common and meaningful expression.",
+        },
+        {
+          id: 12,
+          question: "Technology will play a key role in _ future life-styles.",
+          options: {
+            a: "to shape",
+            b: "shaping",
+            c: "shape of",
+            d: "shaped",
+          },
+          correct: "b",
+          explanation:
+            "After a preposition ('in'), a verb is usually in its gerund (verb-ing) form when it acts as a noun. So, 'shaping' is correct here.",
+        },
+        {
+          id: 13,
+          question: "I’m sure I locked the door. I clearly remember _ it.",
+          options: {
+            a: "to lock",
+            b: "to have locked",
+            c: "locking",
+            d: "lock",
+          },
+          correct: "c",
+          explanation:
+            "The verb 'remember' can be followed by a gerund to refer to a past action that one recalls doing. 'Remember locking' means to recall the act of locking.",
+        },
+        {
+          id: 14,
+          question: "Rana gave up _ football when he became injured.",
+          options: {
+            a: "play",
+            b: "playing",
+            c: "to play",
+            d: "played",
+          },
+          correct: "b",
+          explanation:
+            "The phrasal verb 'give up' (meaning to stop doing something) is followed by a gerund (verb-ing form).",
+        },
+        {
+          id: 15,
+          question: "I saw the ferry _ down the river.",
+          options: {
+            a: "floating",
+            b: "float",
+            c: "to float",
+            d: "be floated",
+          },
+          correct: "a",
+          explanation:
+            "Verbs of perception (like 'see', 'watch', 'hear') can be followed by either a bare infinitive (float) or a present participle (floating). 'Floating' emphasizes the ongoing nature of the action at the time of seeing.",
+        },
+        {
+          id: 16,
+          question: "He hates _ kept _ .",
+          options: {
+            a: "to be, waiting",
+            b: "being, waiting",
+            c: "to be, to wait",
+            d: "to, waiting",
+          },
+          correct: "b",
+          explanation:
+            "The verb 'hate' can be followed by a gerund. When expressing a passive idea, 'being + past participle' is used. So, 'being kept' is correct. The second blank needs a present participle describing the state of being kept, which is 'waiting'. Hence, 'being waiting'.",
+        },
+        {
+          id: 17,
+          question: "The submarine dipped to avoid _ by the enemy plane.",
+          options: {
+            a: "see",
+            b: "being seen",
+            c: "seeing",
+            d: "seen",
+          },
+          correct: "b",
+          explanation:
+            "After 'avoid', a gerund is used. To express a passive meaning, the gerund takes the form 'being + past participle'. The submarine wanted to avoid being seen, not actively seeing.",
+        },
+        {
+          id: 18,
+          question:
+            "'He contemplated marrying his cousin.' Here 'marrying' is a/an-",
+          options: {
+            a: "Present participle",
+            b: "Gerund",
+            c: "Verb",
+            d: "Infinitive",
+          },
+          correct: "b",
+          explanation:
+            "The verb 'contemplate' is followed by a gerund. Here, 'marrying' acts as the object of the verb 'contemplated', functioning as a noun.",
+        },
+        {
+          id: 19,
+          question:
+            'The word "flying" in the sentence "Look at the flying bird" is a:',
+          options: {
+            a: "gerund",
+            b: "participle",
+            c: "verbal noun",
+            d: "gerundial infinitive",
+          },
+          correct: "b",
+          explanation:
+            "In this sentence, 'flying' modifies the noun 'bird', describing its state or action. When a verb ending in '-ing' functions as an adjective, it is a present participle.",
+        },
+        {
+          id: 20,
+          question:
+            "'The old man was tired of walking.' Here 'walking' is a/an-",
+          options: {
+            a: "present participle",
+            b: "adjective",
+            c: "common noun",
+            d: "gerund",
+          },
+          correct: "d",
+          explanation:
+            "After the preposition 'of', the verb 'walk' takes its '-ing' form and functions as a noun, which is a gerund.",
+        },
+        {
+          id: 21,
+          question: "'A lost opportunity never returns'. Here 'lost' is a-",
+          options: {
+            a: "gerund",
+            b: "verbal noun",
+            c: "gerundial infinitive",
+            d: "participle",
+          },
+          correct: "d",
+          explanation:
+            "'Lost' is the past participle of the verb 'lose'. Here, it functions as an adjective modifying the noun 'opportunity', describing its state. Therefore, it is a participle (specifically, a past participle used as an adjective).",
+        },
+        {
+          id: 22,
+          question:
+            "Reading is an excellent habit. Here, the underlined word is a-",
+          options: {
+            a: "Verbal noun",
+            b: "Participle",
+            c: "Verb",
+            d: "Gerund",
+          },
+          correct: "d",
+          explanation:
+            "When a verb ending in '-ing' functions as a noun (acting as the subject of a sentence), it is called a gerund. A gerund is a type of verbal noun.",
+        },
+        {
+          id: 23,
+          question:
+            "A retired officer lives next door. Here, the underlined word is used as a/an:",
+          options: {
+            a: "Gerund",
+            b: "Adverb",
+            c: "Preposition",
+            d: "Participle",
+          },
+          correct: "d",
+          explanation:
+            "'Retired' is the past participle of the verb 'retire'. Here, it functions as an adjective modifying the noun 'officer', describing his status. Therefore, it is a participle (specifically, a past participle used as an adjective).",
+        },
+        {
+          id: 24,
+          question: 'Go and catch the falling star. Here the "falling" is-',
+          options: {
+            a: "an adverb",
+            b: "a preposition",
+            c: "an adjective",
+            d: "a verb",
+          },
+          correct: "c",
+          explanation:
+            "'Falling' is a present participle used as an adjective to describe the noun 'star'. It tells us what kind of star.",
+        },
+        {
+          id: 25,
+          question: "He watched the boat _ down the river.",
+          options: {
+            a: "to float",
+            b: "floating",
+            c: "was floating",
+            d: "had floated",
+          },
+          correct: "b",
+          explanation:
+            "Verbs of perception (like 'watch') can be followed by a present participle (verb-ing) to indicate an ongoing action that was observed. 'Floating' emphasizes the continuous action of the boat as he watched it.",
+        },
+        {
+          id: 26,
+          question:
+            "I don’t think you will have any difficulty _ a driving license.",
+          options: {
+            a: "to get",
+            b: "in getting",
+            c: "for getting",
+            d: "get",
+          },
+          correct: "b",
+          explanation:
+            "The idiom is 'have difficulty in doing something'. So, 'in getting' is the correct construction.",
+        },
+        {
+          id: 27,
+          question: 'A rolling stone gathers no moss. Here "rolling" is?',
+          options: {
+            a: "Gerund",
+            b: "Verbal noun",
+            c: "Participle",
+            d: "Adjective",
+          },
+          correct: "c",
+          explanation:
+            "'Rolling' modifies the noun 'stone', describing its characteristic action. When a verb ending in '-ing' functions as an adjective, it is a present participle.",
+        },
+        {
+          id: 28,
+          question: "Yesterday we had _ twenty minutes for a bus.",
+          options: {
+            a: "wait",
+            b: "to wait",
+            c: "to waiting",
+            d: "to waited",
+          },
+          correct: "b",
+          explanation:
+            "The structure 'had to + verb' means 'were obliged to' or 'it was necessary to'. So, 'had to wait' is correct.",
+        },
+        {
+          id: 29,
+          question: "In fear of _ he escaped elsewhere.",
+          options: {
+            a: "arresting",
+            b: "arrested",
+            c: "being arrested",
+            d: "having arrested",
+          },
+          correct: "c",
+          explanation:
+            "After the preposition 'of', a gerund is needed. To express a passive fear (that he would be arrested by others), the passive gerund form 'being + past participle' is used.",
+        },
+        {
+          id: 30,
+          question:
+            '"Life is a walking shadow". Here the underlined word is a/an-',
+          options: {
+            a: "Noun",
+            b: "Adjective",
+            c: "Verb",
+            d: "Adverb",
+          },
+          correct: "b",
+          explanation:
+            "The underlined word is 'walking'. It modifies the noun 'shadow', describing its nature. When a verb ending in '-ing' functions as an adjective, it is a present participle used adjectivally.",
+        },
+        {
+          id: 31,
+          question: "Rumana finished _ two essays in two days.",
+          options: {
+            a: "written",
+            b: "write",
+            c: "to write",
+            d: "writing",
+          },
+          correct: "d",
+          explanation:
+            "The verb 'finish' is typically followed by a gerund (verb-ing form).",
+        },
+        {
+          id: 32,
+          question: "The book that you see _ on the table belongs to me.",
+          options: {
+            a: "laying",
+            b: "lying",
+            c: "lay",
+            d: "laid",
+          },
+          correct: "b",
+          explanation:
+            "'Lying' is the present participle of 'lie' (to recline or rest in a horizontal position). 'Laying' is the present participle of 'lay' (to place something down). Since the book is resting on the table, 'lying' is correct.",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                          <label class="option" data-option="${option}">
+                                                                            <div class="circle">${option}</div>
+                                                                            <span class="option-text">${question.options[option]}</span>
+                                                                          </label>
+                                                                        `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
